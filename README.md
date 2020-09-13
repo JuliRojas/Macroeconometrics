@@ -1,4 +1,4 @@
-# Econometría I
+# Tópicos de Econometría II
 
 > Ante cualquier inquietud con los temas del curso, no dudes en escribirnos un correo tanto al profesor titular, Jorge, como al monitor, Julián. ¡Con gusto te colaboraremos!
 
@@ -6,7 +6,7 @@
 
 El equipo se encuentra conformado por:
 - **Profesor titular**: Jorge Enrique Muñoz Ayala.
-- **Monitor**: Julián David Rojas Aguilar. [![LinkedIn][https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555]][https://www.linkedin.com/in/judrojasag/] [![YouTube][https://img.shields.io/badge/-YouTube-red.svg?style=flat-square&logo=youtube&colorR=555]][https://www.youtube.com/channel/UCZ8NqNf8joEE-cAtziXGTTQ/] 
+- **Monitor**: Julián David Rojas Aguilar. [![LinkedIn](https://img.shields.io/badge/-LinkedIn-black.svg?style=flat-square&logo=linkedin&colorB=555)](https://www.linkedin.com/in/judrojasag/) [![YouTube](https://img.shields.io/badge/-YouTube-red.svg?style=flat-square&logo=youtube&colorR=555)](https://www.youtube.com/channel/UCZ8NqNf8joEE-cAtziXGTTQ/)
 
 ## Objetivo general
 
