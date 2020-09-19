@@ -66,17 +66,23 @@ dataGgplot %>% ggplot(aes(x = Fecha, y = Valor)) +
         legend.box.margin     = margin(6, 6, 6, 6))
 
 # B| Comportamientos estacionales -----------------------------------------
-data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggseasonplot(year.labels = T,
+data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggseasonplot(main = 'Gráfica estacional: Niveles por años \nDiscriminando por meses',
+                                                                      xlab = 'Meses',
+                                                                      year.labels = T,
                                                                       year.labels.left = T)
 
-data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggseasonplot(polar = T)
+data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggseasonplot(main = 'Gráfica estacional: Diseño polar \nDiscriminando por años',
+                                                                      xlab = 'Meses',
+                                                                      polar = T)
 
-data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggsubseriesplot()
+data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% ggsubseriesplot(main = 'Gráfica estacional: Distribución de los valores \nDiscriminado por meses',
+                                                                         xlab = 'Meses')
 
 # B1| X11 -----------------------------------------------------------------
 data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% seas(x11='') -> SA
 
-autoplot(SA) + ggtitle(paste0('Descomposición vía x11 de ', colnames(data)[2]))
+autoplot(SA) + ggtitle(paste0('Descomposición vía x11 de ', colnames(data)[2])) +
+  theme_bw()
 
 data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% 
   autoplot(series = 'Original') +
@@ -113,7 +119,11 @@ fivebestmdl(serieSA)
 out(serieSA, browser = getOption('Firefox'))
 spc(serieSA)
 
-plot(serieSA)
+plot(serieSA,
+     main = 'Serie original y ajustada',
+     sub  = 'Elaboración propia',
+     xlab = 'Tiempo',
+     ylab = colnames(data)[2])
 summary(serieSA)
 
 # 2.2.4| Modelación -------------------------------------------------------
@@ -137,11 +147,41 @@ data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>%
 serie = data[, 2] %>% ts(start = c(2003, 1), frequency = 12)
 
 lambdaEstimation <- BoxCox.lambda(serie, lower = 0)
-model <- data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% 
+model <- serie %>% 
   Arima(order    = c(0, 1, 0), 
         seasonal = c(0, 1, 0), 
         lambda   = lambdaEstimation)
+summary(model)
 
+results = data.frame(model = 0,
+                     aic   = 0,
+                     bic   = 0)
+aux = 0
+for(p in 0:4) {
+  for(q in 0:4) {
+    for(P in 0:2) {
+      for(Q in 0:2) {
+        aux = aux + 1
+        model <- serie %>% 
+          Arima(order    = c(p, 1, q), 
+                seasonal = c(P, 1, Q), 
+                lambda   = lambdaEstimation)
+        results[aux, 1] = paste0('(', p, ',1,', q, ') x (', P, ',1,', Q, ')s')
+        results[aux, 2] = model[['aic']]
+        results[aux, 3] = model[['bic']]
+      }
+    }
+  }
+}
+
+# Extracción del resultado:
+results %>% subset(aic == min(results$aic))
+results %>% subset(bic == min(results$bic))
+
+model <- serie %>% 
+  Arima(order    = c(2, 1, 3), 
+        seasonal = c(0, 1, 1), 
+        lambda   = lambdaEstimation)
 summary(model)
 
 # Chequeo:

@@ -90,5 +90,26 @@ for (i in 2:simulations){
 }
 
 # 2.2| Procesos estacionales ----------------------------------------------
+observations = 200
+seasonalRW <- ts(replicate(n = 1, 
+                           arima.sim(model = list(order = c(4, 1, 0),
+                                                  ar = c(0, 0, 0, 0.6)), 
+                                     n = observations)))
 
+matplot(seasonalRW, 
+        type = 'l', 
+        col = c('blue','green','gray','orange','red'), 
+        lty = 1, 
+        lwd = 2,
+        main = 'Proceso I(1)',
+        xlab = 'Tiempo',
+        ylab = 'Realización')
 
+matplot(diff(seasonalRW, lag = 4), 
+        type = 'l', 
+        col = c('blue','green','gray','orange','red'), 
+        lty = 1, 
+        lwd = 2,
+        main = 'Proceso I(1)',
+        xlab = 'Tiempo',
+        ylab = 'Realización')
