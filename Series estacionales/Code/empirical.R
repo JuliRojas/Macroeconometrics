@@ -24,6 +24,8 @@ library(reshape2)  # Manipulación de datos: Formato de lectura en ggplot2.
 library(lubridate) # Manipulación de datos: Fechas.
 library(seasonal)  # Componente estacional.
 library(forecast)  # Empleado como complemento de 'seasonal'.
+library(uroot)     # Pruebas de raíz unitaria.
+library(seastests) # Preba OCSB.
 
 # 2| Bases de datos -------------------------------------------------------
 # 2.1| Importación --------------------------------------------------------
@@ -126,8 +128,14 @@ plot(serieSA,
      ylab = colnames(data)[2])
 summary(serieSA)
 
-# 2.2.4| Modelación -------------------------------------------------------
-# Evaluación del comportamiento:
+# Se exporta la serie desestacionalizada para aplicar el filtro mecánico:
+serieSA = final(serieSA)
+write.csv(serieSA, file = paste0('Output/Data/', 'Serie ajustada estacionalmente.csv'), 
+          row.names = FALSE)
+serieSA = serieSA %>% ts(start = c(2003, 1), frequency = 12)
+
+# 3| Modelación -----------------------------------------------------------
+# 3.1| Evaluación del comportamiento --------------------------------------
 data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% 
   ggtsdisplay(main = 'Serie original', xlab = 'Fecha', ylab = 'Índice', 
               plot.type = 'partial', theme = theme_bw())
@@ -137,15 +145,59 @@ data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% diff() %>%
               ylab = 'Índice diferenciado regularmente',
               plot.type = 'partial', theme = theme_bw())
 
+data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% diff(lag = 12) %>% 
+  ggtsdisplay(main = 'Diferencia estacional', xlab = 'Fecha', 
+              ylab = 'Índice diferenciado estacionalmente',
+              plot.type = 'partial', theme = theme_bw())
+
 data[, 2] %>% ts(start = c(2003, 1), frequency = 12) %>% 
   diff() %>% diff(lag = 12) %>% 
   ggtsdisplay(main='Diferencia regular y estacional', xlab = 'Fecha', 
               ylab = 'Índice diferenciado regular \n y estacionalmente', 
               plot.type = 'partial', theme = theme_bw())
 
-# Modelación de la serie:
+# 3.2| Pruebas de raíz unitaria estacionales ------------------------------
 serie = data[, 2] %>% ts(start = c(2003, 1), frequency = 12)
 
+# 3.2.1| HEGY -------------------------------------------------------------
+# Modelo con constante, tendencia y dummies estacionales:
+HEGY <- hegy.test(serie, deterministic = c(1,1,1), lag.method = 'AIC', maxlag = 4)
+summary(HEGY)
+hegy.boot.pval(serie, HEGY$fit, HEGY$stat, deterministic = c(1,1,1), 
+               lag.method = 'AIC', nb = 1000)
+# Constante y tendencia:
+HEGY <- hegy.test(serie, deterministic = c(1,1,0), lag.method = 'AIC', maxlag = 4)
+summary(HEGY)
+hegy.boot.pval(serie, HEGY$fit, HEGY$stat, deterministic = c(1,1,0), maxlag = 4,
+               lag.method = 'AIC', nb = 1000)
+# Constante:
+HEGY <- hegy.test(serie, deterministic = c(1,0,0), lag.method = 'AIC', maxlag = 4)
+summary(HEGY)
+hegy.boot.pval(serie, HEGY$fit, HEGY$stat, deterministic = c(1,0,0), maxlag = 4,
+               lag.method = 'AIC', nb = 1000)
+# Nada:
+HEGY <- hegy.test(serie, deterministic = c(0,0,0), lag.method = 'AIC', maxlag = 4)
+summary(HEGY)
+hegy.boot.pval(serie, HEGY$fit, HEGY$stat, deterministic = c(0,0,0), maxlag = 4,
+               lag.method = 'AIC', nb = 1000)
+
+# 3.2.2| OCSB -------------------------------------------------------------
+OCSB <- ocsb(serie, method = 'ML', nrun = 1000, seed = 123)
+OCSB
+
+# 3.2.3| CH ---------------------------------------------------------------
+CH <- ch.test(serie, type = 'trigonometric', pvalue = 'RS',
+              lag1 = TRUE, NW.order = 4)
+summary(CH$fit)
+CH
+
+# 3.2.4| Resumen ----------------------------------------------------------
+nsdiffs(serie, alpha = 0.05, test = 'seas') 
+nsdiffs(serie, alpha = 0.05, test = 'ocsb') 
+nsdiffs(serie, alpha = 0.05, test = 'hegy') 
+nsdiffs(serie, alpha = 0.05, test = 'ch')
+
+# 3.3| Red de búsqueda ----------------------------------------------------
 lambdaEstimation <- BoxCox.lambda(serie, lower = 0)
 model <- serie %>% 
   Arima(order    = c(0, 1, 0), 
@@ -178,6 +230,7 @@ for(p in 0:4) {
 results %>% subset(aic == min(results$aic))
 results %>% subset(bic == min(results$bic))
 
+# 3.4| Estimación y validación de supuestos -------------------------------
 model <- serie %>% 
   Arima(order    = c(2, 1, 3), 
         seasonal = c(0, 1, 1), 
@@ -188,6 +241,6 @@ summary(model)
 checkresiduals(model)
 autoplot(model)
 
-# Pronóstico:
+# 3.5| Pronóstico ---------------------------------------------------------
 autoplot(forecast(model))
 model %>% forecast(h = 12) %>% autoplot()
